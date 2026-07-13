@@ -18,7 +18,7 @@ import {
 } from "./history.js";
 import { loadConfig } from "./config.js";
 
-const VERSION = "0.6.0";
+const VERSION = "0.7.0";
 
 function usage(): void {
   console.log(`solo-watch ${VERSION} — Solo Leveling Forge
@@ -28,7 +28,9 @@ Usage:
   solo-watch watch [path] [--interval SEC] [flags]
   solo-watch history [path] [--limit N]
   solo-watch badge [path] [--out file.svg]
-  solo-watch init [path]    scaffold .solo-watch/config.json
+  solo-watch init [path]     scaffold .solo-watch/config.json
+  solo-watch doctor [path]   self-check CLI + scan smoke
+  solo-watch rank [path]     last N history ranks (score timeline)
   solo-watch help | version
 
 Flags:
@@ -42,7 +44,7 @@ Flags:
 Multi-path: solo-watch scan ./a ./b --json
 Config:     .solo-watch/config.json  { "minScore": 60, "history": true, "skipDirs": [] }
 
-npx --yes github:xre217/solo-watch@v0.6.0 scan .
+npx --yes github:xre217/solo-watch@v0.7.0 scan .
 `);
 }
 
@@ -223,6 +225,84 @@ async function main(): Promise<void> {
     writeFileSync(cfgPath, JSON.stringify(body, null, 2) + "\n", "utf8");
     console.log(`init  ${cfgPath}`);
     console.log(`run   solo-watch scan ${target} --history --badge`);
+    return;
+  }
+
+  if (head === "doctor") {
+    const target = path.resolve(positional[1] ?? process.cwd());
+    const checks: { name: string; ok: boolean; detail: string }[] = [];
+    checks.push({
+      name: "node",
+      ok: true,
+      detail: process.version,
+    });
+    checks.push({
+      name: "scan_fn",
+      ok: typeof scanRepo === "function",
+      detail: "scanRepo export",
+    });
+    let smokeOk = false;
+    let smokeScore = -1;
+    try {
+      const r = scanRepo(target);
+      smokeOk = r.score >= 0 && Boolean(r.grade);
+      smokeScore = r.score;
+    } catch (e) {
+      checks.push({
+        name: "smoke_scan",
+        ok: false,
+        detail: e instanceof Error ? e.message : String(e),
+      });
+    }
+    if (smokeScore >= 0) {
+      checks.push({
+        name: "smoke_scan",
+        ok: smokeOk,
+        detail: `score ${smokeScore} on ${target}`,
+      });
+    }
+    const cfg = loadConfig(target);
+    checks.push({
+      name: "config",
+      ok: true,
+      detail: Object.keys(cfg).length
+        ? `loaded keys: ${Object.keys(cfg).join(",")}`
+        : "defaults (no config.json)",
+    });
+    console.log(`doctor · solo-watch ${VERSION}\n`);
+    let fails = 0;
+    for (const c of checks) {
+      if (!c.ok) fails++;
+      console.log(`  ${c.ok ? "✓" : "✗"} ${c.name.padEnd(12)} ${c.detail}`);
+    }
+    console.log(fails ? `\n  FAIL ${fails}` : `\n  PASS`);
+    process.exit(fails ? 1 : 0);
+  }
+
+  if (head === "rank") {
+    const target = path.resolve(positional[1] ?? process.cwd());
+    const lines = readHistory(target, limit);
+    if (!lines.length) {
+      console.log("no history — run: solo-watch scan --history");
+      process.exit(0);
+    }
+    if (json) {
+      console.log(JSON.stringify(lines, null, 2));
+      return;
+    }
+    console.log(`rank · last ${lines.length} scans · ${target}\n`);
+    for (const l of lines) {
+      const bar = "█".repeat(Math.max(1, Math.round(l.score / 5)));
+      console.log(
+        `  ${l.ts.slice(0, 19)}  ${l.grade} ${String(l.score).padStart(3)}  ${bar}`,
+      );
+    }
+    const first = lines[0];
+    const last = lines[lines.length - 1];
+    const d = last.score - first.score;
+    console.log(
+      `\n  span  ${first.score} → ${last.score}  (${d >= 0 ? "+" : ""}${d})`,
+    );
     return;
   }
 

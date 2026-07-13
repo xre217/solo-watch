@@ -24,8 +24,8 @@ node dist/cli.js scan . --json --min-score 70
 
 ```bash
 npx --yes github:xre217/solo-watch scan .
-npx --yes github:xre217/solo-watch@v0.6.0 scan . --history --badge --delta
-npx --yes github:xre217/solo-watch@v0.6.0 scan ./a ./b --json
+npx --yes github:xre217/solo-watch@v0.7.0 scan . --history --badge --delta
+npx --yes github:xre217/solo-watch@v0.7.0 scan ./a ./b --json
 ```
 
 ### npx (from this package dir)

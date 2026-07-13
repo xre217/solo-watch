@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- `solo-watch doctor` — CLI + smoke scan self-check
+- `solo-watch rank` — history score timeline / rank-up bar
+
 ## 0.6.0
 
 - `solo-watch init` scaffolds `.solo-watch/config.json`
