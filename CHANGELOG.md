@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Signals: Makefile, runtime pin (.nvmrc), AGENTS.md/CLAUDE.md
+
 ## 0.4.0
 
 - Multi-path scan: `solo-watch scan ./a ./b`

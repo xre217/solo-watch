@@ -335,6 +335,35 @@ export function scanRepo(rootInput) {
             weight: -1,
         });
     }
+    if (exists(root, "Makefile") || exists(root, "makefile")) {
+        findings.push({
+            id: "has-makefile",
+            severity: "ok",
+            title: "Makefile",
+            detail: "Build/ops entry surface",
+            weight: -2,
+        });
+    }
+    if (exists(root, ".nvmrc") ||
+        exists(root, ".node-version") ||
+        exists(root, ".tool-versions")) {
+        findings.push({
+            id: "has-runtime-pin",
+            severity: "ok",
+            title: "Runtime pin",
+            detail: ".nvmrc / .node-version / .tool-versions",
+            weight: -2,
+        });
+    }
+    if (exists(root, "AGENTS.md") || exists(root, "CLAUDE.md")) {
+        findings.push({
+            id: "has-agent-doc",
+            severity: "ok",
+            title: "Agent operator doc",
+            detail: "AGENTS.md or CLAUDE.md for machine operators",
+            weight: -2,
+        });
+    }
     const net = findings.reduce((s, f) => s + f.weight, 0);
     const score = Math.max(0, Math.min(100, 100 - net));
     const grade = score >= 85 ? "A" : score >= 70 ? "B" : score >= 55 ? "C" : score >= 40 ? "D" : "F";
