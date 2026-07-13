@@ -4,7 +4,7 @@ import path from "node:path";
 import { badgeSvg, formatAnnotations, formatMarkdown, formatReport, scanRepo, } from "./scan.js";
 import { appendHistory, deltaAgainstHistory, formatDelta, readHistory, } from "./history.js";
 import { loadConfig } from "./config.js";
-const VERSION = "0.5.0";
+const VERSION = "0.6.0";
 function usage() {
     console.log(`solo-watch ${VERSION} — Solo Leveling Forge
 
@@ -13,6 +13,7 @@ Usage:
   solo-watch watch [path] [--interval SEC] [flags]
   solo-watch history [path] [--limit N]
   solo-watch badge [path] [--out file.svg]
+  solo-watch init [path]    scaffold .solo-watch/config.json
   solo-watch help | version
 
 Flags:
@@ -20,12 +21,13 @@ Flags:
   --min-score N     (default 55, or .solo-watch/config.json)
   --history --badge [file] --delta
   --write <file>    write JSON report(s) to file
+  --quiet           suppress human report (exit code only + optional json)
   --interval SEC    watch mode (default 30)
 
 Multi-path: solo-watch scan ./a ./b --json
-Config:     .solo-watch/config.json  { "minScore": 60, "history": true }
+Config:     .solo-watch/config.json  { "minScore": 60, "history": true, "skipDirs": [] }
 
-npx --yes github:xre217/solo-watch@v0.5.0 scan .
+npx --yes github:xre217/solo-watch@v0.6.0 scan .
 `);
 }
 function parseArgs(argv) {
@@ -37,6 +39,7 @@ function parseArgs(argv) {
     let badge = false;
     let delta = false;
     let writePath = null;
+    let quiet = false;
     let limit = 20;
     let interval = 30;
     const positional = [];
@@ -50,6 +53,8 @@ function parseArgs(argv) {
             annotate = true;
         else if (a === "--history")
             history = true;
+        else if (a === "--quiet" || a === "-q")
+            quiet = true;
         else if (a === "--delta")
             delta = true;
         else if (a === "--min-score" || a === "--fail-below") {
@@ -97,6 +102,7 @@ function parseArgs(argv) {
         badge,
         delta,
         writePath,
+        quiet,
         limit,
         interval,
         positional,
@@ -154,7 +160,7 @@ async function main() {
         usage();
         process.exit(2);
     }
-    const { json, md, annotate, minScore: minScoreArg, history, badge, delta, writePath, limit, interval, positional, } = opts;
+    const { json, md, annotate, minScore: minScoreArg, history, badge, delta, writePath, quiet, limit, interval, positional, } = opts;
     const head = positional[0];
     if (head === "help") {
         usage();
@@ -162,6 +168,23 @@ async function main() {
     }
     if (head === "version" || head === "-v" || head === "--version") {
         console.log(VERSION);
+        return;
+    }
+    if (head === "init") {
+        const target = path.resolve(positional[1] ?? process.cwd());
+        const dir = path.join(target, ".solo-watch");
+        mkdirSync(dir, { recursive: true });
+        const cfgPath = path.join(dir, "config.json");
+        const body = {
+            minScore: 55,
+            history: true,
+            badge: true,
+            delta: true,
+            skipDirs: [],
+        };
+        writeFileSync(cfgPath, JSON.stringify(body, null, 2) + "\n", "utf8");
+        console.log(`init  ${cfgPath}`);
+        console.log(`run   solo-watch scan ${target} --history --badge`);
         return;
     }
     if (head === "history") {
@@ -246,6 +269,9 @@ async function main() {
             console.log(formatMarkdown(report));
             if (d)
                 console.log("\n" + formatDelta(d));
+        }
+        else if (quiet) {
+            console.error(`solo-watch ${report.grade} ${report.score} min=${minScore} → ${code === 0 ? "PASS" : "FAIL"}`);
         }
         else if (!annotate || process.env.SOLO_WATCH_HUMAN === "1") {
             printHuman(report, d, minScore, code);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- `solo-watch init` scaffolds `.solo-watch/config.json`
+- `--quiet` / `-q` for CI gate without human report
+- `AGENTS.md` for machine operators
+
 ## 0.5.0
 
 - Config `skipDirs` for custom tree skips

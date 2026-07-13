@@ -18,7 +18,7 @@ import {
 } from "./history.js";
 import { loadConfig } from "./config.js";
 
-const VERSION = "0.5.0";
+const VERSION = "0.6.0";
 
 function usage(): void {
   console.log(`solo-watch ${VERSION} — Solo Leveling Forge
@@ -28,6 +28,7 @@ Usage:
   solo-watch watch [path] [--interval SEC] [flags]
   solo-watch history [path] [--limit N]
   solo-watch badge [path] [--out file.svg]
+  solo-watch init [path]    scaffold .solo-watch/config.json
   solo-watch help | version
 
 Flags:
@@ -35,12 +36,13 @@ Flags:
   --min-score N     (default 55, or .solo-watch/config.json)
   --history --badge [file] --delta
   --write <file>    write JSON report(s) to file
+  --quiet           suppress human report (exit code only + optional json)
   --interval SEC    watch mode (default 30)
 
 Multi-path: solo-watch scan ./a ./b --json
-Config:     .solo-watch/config.json  { "minScore": 60, "history": true }
+Config:     .solo-watch/config.json  { "minScore": 60, "history": true, "skipDirs": [] }
 
-npx --yes github:xre217/solo-watch@v0.5.0 scan .
+npx --yes github:xre217/solo-watch@v0.6.0 scan .
 `);
 }
 
@@ -53,6 +55,7 @@ function parseArgs(argv: string[]) {
   let badge: string | boolean = false;
   let delta = false;
   let writePath: string | null = null;
+  let quiet = false;
   let limit = 20;
   let interval = 30;
   const positional: string[] = [];
@@ -62,6 +65,7 @@ function parseArgs(argv: string[]) {
     else if (a === "--md" || a === "--markdown") md = true;
     else if (a === "--annotate" || a === "--annotations") annotate = true;
     else if (a === "--history") history = true;
+    else if (a === "--quiet" || a === "-q") quiet = true;
     else if (a === "--delta") delta = true;
     else if (a === "--min-score" || a === "--fail-below") {
       const n = Number(argv[++i]);
@@ -95,6 +99,7 @@ function parseArgs(argv: string[]) {
     badge,
     delta,
     writePath,
+    quiet,
     limit,
     interval,
     positional,
@@ -187,6 +192,7 @@ async function main(): Promise<void> {
     badge,
     delta,
     writePath,
+    quiet,
     limit,
     interval,
     positional,
@@ -199,6 +205,24 @@ async function main(): Promise<void> {
   }
   if (head === "version" || head === "-v" || head === "--version") {
     console.log(VERSION);
+    return;
+  }
+
+  if (head === "init") {
+    const target = path.resolve(positional[1] ?? process.cwd());
+    const dir = path.join(target, ".solo-watch");
+    mkdirSync(dir, { recursive: true });
+    const cfgPath = path.join(dir, "config.json");
+    const body = {
+      minScore: 55,
+      history: true,
+      badge: true,
+      delta: true,
+      skipDirs: [] as string[],
+    };
+    writeFileSync(cfgPath, JSON.stringify(body, null, 2) + "\n", "utf8");
+    console.log(`init  ${cfgPath}`);
+    console.log(`run   solo-watch scan ${target} --history --badge`);
     return;
   }
 
@@ -282,6 +306,10 @@ async function main(): Promise<void> {
     } else if (md) {
       console.log(formatMarkdown(report));
       if (d) console.log("\n" + formatDelta(d));
+    } else if (quiet) {
+      console.error(
+        `solo-watch ${report.grade} ${report.score} min=${minScore} → ${code === 0 ? "PASS" : "FAIL"}`,
+      );
     } else if (!annotate || process.env.SOLO_WATCH_HUMAN === "1") {
       printHuman(report, d, minScore, code);
     } else {
