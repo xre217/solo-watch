@@ -1,6 +1,6 @@
 export type Finding = {
     id: string;
-    severity: "info" | "warn" | "fail";
+    severity: "info" | "warn" | "fail" | "ok";
     title: string;
     detail: string;
     weight: number;
@@ -16,9 +16,16 @@ export type ScanReport = {
         hasCi: boolean;
         hasTests: boolean;
         hasReadme: boolean;
+        hasLicense: boolean;
+        hasDocker: boolean;
         dirty: boolean;
         lastCommitDays: number | null;
+        branch: string | null;
     };
+    scanned_at: string;
 };
 export declare function scanRepo(rootInput: string): ScanReport;
 export declare function formatReport(r: ScanReport): string;
+export declare function gradeColor(grade: string): string;
+/** Tiny SVG badge for READMEs / dashboards — instrument, not persona. */
+export declare function badgeSvg(score: number, grade: string): string;

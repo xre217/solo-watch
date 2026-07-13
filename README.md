@@ -13,7 +13,9 @@ cd ~/Projects/solo-leveling/products/solo-watch
 npm install
 npm test
 node dist/cli.js                # scan cwd
-node dist/cli.js scan ~/SAO
+node dist/cli.js scan ~/SAO --history --badge
+node dist/cli.js history .
+node dist/cli.js badge .
 node dist/cli.js scan . --json --min-score 70
 ```
 

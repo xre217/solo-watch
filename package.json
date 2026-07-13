@@ -1,6 +1,6 @@
 {
   "name": "solo-watch",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Repo / deploy health scanner — Solo Leveling Forge (AI sanctuary product)",
   "type": "module",
   "bin": {
@@ -19,9 +19,12 @@
     "dist/cli.d.ts",
     "dist/scan.js",
     "dist/scan.d.ts",
+    "dist/history.js",
+    "dist/history.d.ts",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "action.yml"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
