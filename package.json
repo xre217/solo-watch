@@ -1,0 +1,61 @@
+{
+  "name": "solo-watch",
+  "version": "0.1.1",
+  "description": "Repo / deploy health scanner — Solo Leveling Forge (AI sanctuary product)",
+  "type": "module",
+  "bin": {
+    "solo-watch": "./dist/cli.js"
+  },
+  "main": "./dist/scan.js",
+  "types": "./dist/scan.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/scan.d.ts",
+      "import": "./dist/scan.js"
+    }
+  },
+  "files": [
+    "dist/cli.js",
+    "dist/cli.d.ts",
+    "dist/scan.js",
+    "dist/scan.d.ts",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
+    "scan": "node dist/cli.js scan",
+    "test": "npm run build && node --test dist/scan.test.js",
+    "pack:check": "npm run test && npm pack --dry-run"
+  },
+  "keywords": [
+    "solo-leveling",
+    "repo-health",
+    "ci",
+    "deploy",
+    "sao",
+    "forge"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xre217/solo-watch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xre217/solo-watch/issues"
+  },
+  "homepage": "https://github.com/xre217/solo-watch#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

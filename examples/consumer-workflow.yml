@@ -1,0 +1,26 @@
+# Drop into any repo as .github/workflows/solo-watch.yml
+# Uses local path action once you vendor or submodule solo-watch,
+# or switch to a published action after npm/git release.
+
+name: solo-watch
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Option A — after you publish the package to npm:
+      # - run: npx --yes solo-watch@0.1.1 scan . --min-score 55
+
+      # Option B — public composite action:
+      - name: Scan with solo-watch action
+        uses: xre217/solo-watch@main
+        with:
+          path: "."
+          min-score: "55"
+          json: "true"

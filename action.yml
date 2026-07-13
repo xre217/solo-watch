@@ -1,0 +1,85 @@
+name: "solo-watch"
+description: "Solo Leveling Forge — scan repo/deploy health (CI grade gate)"
+author: "Solo Leveling Haven"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  path:
+    description: "Path to scan (relative to workspace)"
+    required: false
+    default: "."
+  min-score:
+    description: "Minimum score to pass the job (0-100)"
+    required: false
+    default: "55"
+  json:
+    description: "Emit JSON report to stdout and GITHUB_STEP_SUMMARY"
+    required: false
+    default: "true"
+
+outputs:
+  score:
+    description: "Health score 0-100"
+    value: ${{ steps.scan.outputs.score }}
+  grade:
+    description: "Letter grade A-F"
+    value: ${{ steps.scan.outputs.grade }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+
+    - name: Install & build solo-watch (action path)
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        # Need devDeps (typescript) to build; dist may already exist in tree
+        if [[ ! -f dist/cli.js ]]; then
+          npm ci 2>/dev/null || npm install
+          npm run build
+        else
+          npm ci --omit=dev 2>/dev/null || npm install --omit=dev || true
+        fi
+
+    - name: Scan
+      id: scan
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SW_PATH: ${{ inputs.path }}
+        SW_MIN: ${{ inputs.min-score }}
+        SW_JSON: ${{ inputs.json }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        ARGS=(scan "$SW_PATH" --min-score "$SW_MIN")
+        if [[ "$SW_JSON" == "true" ]]; then
+          ARGS+=(--json)
+        fi
+        set +e
+        OUT=$(node "$ACTION_PATH/dist/cli.js" "${ARGS[@]}")
+        CODE=$?
+        set -e
+        echo "$OUT"
+        if [[ "$SW_JSON" == "true" ]]; then
+          SCORE=$(echo "$OUT" | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const j=JSON.parse(s);console.log(j.score);})")
+          GRADE=$(echo "$OUT" | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const j=JSON.parse(s);console.log(j.grade);})")
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+          echo "grade=$GRADE" >> "$GITHUB_OUTPUT"
+          {
+            echo "## solo-watch"
+            echo ""
+            echo "Score **$SCORE** · Grade **$GRADE** · min-score **$SW_MIN**"
+            echo ""
+            echo '```json'
+            echo "$OUT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+        exit $CODE

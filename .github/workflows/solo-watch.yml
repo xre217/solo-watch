@@ -1,0 +1,25 @@
+name: solo-watch
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install & test
+        run: |
+          npm ci
+          npm test
+
+      - name: Scan this repo
+        run: node dist/cli.js scan . --min-score 40
+        # own tree may lack git history in some checkouts; 40 = structural bar
