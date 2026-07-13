@@ -13,9 +13,10 @@ cd ~/Projects/solo-leveling/products/solo-watch
 npm install
 npm test
 node dist/cli.js                # scan cwd
-node dist/cli.js scan ~/SAO --history --badge
+node dist/cli.js scan ~/SAO --history --badge --delta
 node dist/cli.js history .
 node dist/cli.js badge .
+node dist/cli.js watch . --interval 60
 node dist/cli.js scan . --json --min-score 70
 ```
 
@@ -23,7 +24,7 @@ node dist/cli.js scan . --json --min-score 70
 
 ```bash
 npx --yes github:xre217/solo-watch scan .
-npx --yes github:xre217/solo-watch@v0.2.0 scan . --history --badge
+npx --yes github:xre217/solo-watch@v0.3.0 scan . --history --badge --delta
 ```
 
 ### npx (from this package dir)

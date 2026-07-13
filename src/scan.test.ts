@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { badgeSvg, scanRepo } from "./scan.js";
-import { appendHistory, readHistory } from "./history.js";
+import {
+  appendHistory,
+  deltaAgainstHistory,
+  formatDelta,
+  readHistory,
+} from "./history.js";
 
 describe("scanRepo", () => {
   it("flags empty non-git tree", () => {
@@ -58,5 +63,19 @@ describe("scanRepo", () => {
     const svg = badgeSvg(88, "A");
     assert.ok(svg.includes("A 88"));
     assert.ok(svg.includes("solo-watch"));
+  });
+
+  it("delta detects score movement", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));
+    writeFileSync(path.join(dir, "README.md"), "# x\n");
+    const r1 = scanRepo(dir);
+    appendHistory(r1);
+    writeFileSync(path.join(dir, "LICENSE"), "MIT\n");
+    mkdirSync(path.join(dir, "tests"));
+    writeFileSync(path.join(dir, "tests", "a.test.js"), "ok");
+    const r2 = scanRepo(dir);
+    const d = deltaAgainstHistory(r2, readHistory(dir, 1)[0]);
+    assert.equal(d.has_prior, true);
+    assert.ok(formatDelta(d).includes("score"));
   });
 });

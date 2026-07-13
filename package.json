@@ -1,6 +1,6 @@
 {
   "name": "solo-watch",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Repo / deploy health scanner — Solo Leveling Forge (AI sanctuary product)",
   "type": "module",
   "bin": {

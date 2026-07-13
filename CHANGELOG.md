@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- `solo-watch watch` — interval rescan with auto-history + delta
+- `--delta` — score/grade/finding movement vs last history line
+- Stronger history helpers (`deltaAgainstHistory`, `formatDelta`)
+- Version string 0.3.0
+
 ## 0.2.0
 
 - More signals: LICENSE, Docker, CODEOWNERS, SECURITY, CONTRIBUTING, .gitignore, engines, key material
@@ -11,11 +18,8 @@
 
 ## 0.1.1
 
-- Distribution: npm pack layout, MIT license, `prepare`/`prepack` build
-- CLI: default scan cwd, `--min-score`, `version`
-- GitHub composite Action (`action.yml`) + self-test workflow
-- `DISTRIBUTION.md` + consumer workflow example
+- Distribution: npm pack layout, MIT license, GHA action
 
 ## 0.1.0
 
-- Initial `solo-watch scan`
+- Initial scan
