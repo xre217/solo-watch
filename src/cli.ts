@@ -6,6 +6,7 @@ import {
   formatAnnotations,
   formatMarkdown,
   formatReport,
+  formatSarif,
   scanRepo,
   type ScanReport,
 } from "./scan.js";
@@ -18,33 +19,28 @@ import {
 } from "./history.js";
 import { loadConfig } from "./config.js";
 
-const VERSION = "0.7.0";
+const VERSION = "0.8.0";
 
 function usage(): void {
-  console.log(`solo-watch ${VERSION} — Solo Leveling Forge
+  console.log(`solo-watch ${VERSION} — Solo Leveling Forge · NEXT LEVEL
 
 Usage:
   solo-watch [scan] [path...] [flags]
   solo-watch watch [path] [--interval SEC] [flags]
-  solo-watch history [path] [--limit N]
-  solo-watch badge [path] [--out file.svg]
-  solo-watch init [path]     scaffold .solo-watch/config.json
-  solo-watch doctor [path]   self-check CLI + scan smoke
-  solo-watch rank [path]     last N history ranks (score timeline)
+  solo-watch history|rank|badge|init|doctor [path]
   solo-watch help | version
 
 Flags:
   --json --md --annotate
+  --sarif <file>    write SARIF 2.1.0 report
+  --strict          fail if any severity=fail finding (even if score passes)
   --min-score N     (default 55, or .solo-watch/config.json)
   --history --badge [file] --delta
   --write <file>    write JSON report(s) to file
-  --quiet           suppress human report (exit code only + optional json)
+  --quiet           suppress human report
   --interval SEC    watch mode (default 30)
 
-Multi-path: solo-watch scan ./a ./b --json
-Config:     .solo-watch/config.json  { "minScore": 60, "history": true, "skipDirs": [] }
-
-npx --yes github:xre217/solo-watch@v0.7.0 scan .
+npx --yes github:xre217/solo-watch@v0.8.0 scan . --strict
 `);
 }
 
@@ -58,6 +54,8 @@ function parseArgs(argv: string[]) {
   let delta = false;
   let writePath: string | null = null;
   let quiet = false;
+  let strict = false;
+  let sarifPath: string | null = null;
   let limit = 20;
   let interval = 30;
   const positional: string[] = [];
@@ -68,11 +66,15 @@ function parseArgs(argv: string[]) {
     else if (a === "--annotate" || a === "--annotations") annotate = true;
     else if (a === "--history") history = true;
     else if (a === "--quiet" || a === "-q") quiet = true;
+    else if (a === "--strict") strict = true;
     else if (a === "--delta") delta = true;
     else if (a === "--min-score" || a === "--fail-below") {
       const n = Number(argv[++i]);
       if (!Number.isFinite(n)) throw new Error(`${a} requires a number`);
       minScore = n;
+    } else if (a === "--sarif") {
+      sarifPath = argv[++i];
+      if (!sarifPath) throw new Error("--sarif requires a path");
     } else if (a === "--write") {
       writePath = argv[++i];
       if (!writePath) throw new Error("--write requires a path");
@@ -102,6 +104,8 @@ function parseArgs(argv: string[]) {
     delta,
     writePath,
     quiet,
+    strict,
+    sarifPath,
     limit,
     interval,
     positional,
@@ -113,7 +117,19 @@ type RunOpts = {
   history: boolean;
   badge: string | boolean;
   delta: boolean;
+  strict: boolean;
+  sarifPath: string | null;
 };
+
+function exitCodeFor(
+  report: ScanReport,
+  minScore: number,
+  strict: boolean,
+): number {
+  if (report.score < minScore) return 1;
+  if (strict && report.findings.some((f) => f.severity === "fail")) return 1;
+  return 0;
+}
 
 function executeScan(
   target: string,
@@ -143,10 +159,16 @@ function executeScan(
     writeFileSync(out, badgeSvg(report.score, report.grade), "utf8");
   }
 
+  if (opts.sarifPath) {
+    const p = path.resolve(opts.sarifPath);
+    mkdirSync(path.dirname(p), { recursive: true });
+    writeFileSync(p, formatSarif(report) + "\n", "utf8");
+  }
+
   return {
     report,
     delta: d,
-    code: report.score >= minScore ? 0 : 1,
+    code: exitCodeFor(report, minScore, opts.strict),
   };
 }
 
@@ -195,6 +217,8 @@ async function main(): Promise<void> {
     delta,
     writePath,
     quiet,
+    strict,
+    sarifPath,
     limit,
     interval,
     positional,
@@ -346,6 +370,8 @@ async function main(): Promise<void> {
         history: true,
         badge,
         delta: true,
+        strict,
+        sarifPath,
       });
       if (annotate) console.log(formatAnnotations(report));
       if (json) {
@@ -367,7 +393,14 @@ async function main(): Promise<void> {
   paths = paths.map((p) => path.resolve(p));
 
   const minScore = resolveMinScore(minScoreArg, paths);
-  const runOpts = { minScore, history, badge, delta };
+  const runOpts: RunOpts = {
+    minScore,
+    history,
+    badge,
+    delta,
+    strict,
+    sarifPath: paths.length === 1 ? sarifPath : null,
+  };
 
   if (paths.length === 1) {
     const { report, delta: d, code } = executeScan(paths[0], runOpts);

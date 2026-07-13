@@ -563,6 +563,65 @@ export function gradeColor(grade: string): string {
   }
 }
 
+/** Minimal SARIF 2.1.0 for GitHub code scanning / tooling. */
+export function formatSarif(r: ScanReport): string {
+  const results = r.findings
+    .filter((f) => f.severity !== "ok")
+    .map((f) => {
+      const level =
+        f.severity === "fail"
+          ? "error"
+          : f.severity === "warn"
+            ? "warning"
+            : "note";
+      return {
+        ruleId: f.id,
+        level,
+        message: { text: `${f.title}: ${f.detail}` },
+        locations: [
+          {
+            physicalLocation: {
+              artifactLocation: { uri: r.root.replace(/\\/g, "/") },
+            },
+          },
+        ],
+      };
+    });
+  return JSON.stringify(
+    {
+      $schema:
+        "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+      version: "2.1.0",
+      runs: [
+        {
+          tool: {
+            driver: {
+              name: "solo-watch",
+              informationUri: "https://github.com/xre217/solo-watch",
+              version: "0.8.0",
+              rules: r.findings
+                .filter((f) => f.severity !== "ok")
+                .map((f) => ({
+                  id: f.id,
+                  shortDescription: { text: f.title },
+                  fullDescription: { text: f.detail },
+                })),
+            },
+          },
+          results,
+          properties: {
+            score: r.score,
+            grade: r.grade,
+            scanned_at: r.scanned_at,
+          },
+        },
+      ],
+    },
+    null,
+    2,
+  );
+}
+
 /** Tiny SVG badge for READMEs / dashboards — instrument, not persona. */
 export function badgeSvg(score: number, grade: string): string {
   const color = gradeColor(grade);

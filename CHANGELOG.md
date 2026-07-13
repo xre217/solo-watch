@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- `--sarif <file>` SARIF 2.1.0 export
+- `--strict` fail on any severity=fail finding
+- NEXT LEVEL ship for Solo Leveling Forge
+
 ## 0.7.0
 
 - `solo-watch doctor` — CLI + smoke scan self-check

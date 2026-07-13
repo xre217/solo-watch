@@ -33,5 +33,7 @@ export declare function formatMarkdown(r: ScanReport): string;
 /** GitHub Actions workflow annotations (no path line numbers — tree-level). */
 export declare function formatAnnotations(r: ScanReport): string;
 export declare function gradeColor(grade: string): string;
+/** Minimal SARIF 2.1.0 for GitHub code scanning / tooling. */
+export declare function formatSarif(r: ScanReport): string;
 /** Tiny SVG badge for READMEs / dashboards — instrument, not persona. */
 export declare function badgeSvg(score: number, grade: string): string;

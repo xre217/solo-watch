@@ -3,7 +3,13 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { badgeSvg, formatAnnotations, formatMarkdown, scanRepo } from "./scan.js";
+import {
+  badgeSvg,
+  formatAnnotations,
+  formatMarkdown,
+  formatSarif,
+  scanRepo,
+} from "./scan.js";
 import {
   appendHistory,
   deltaAgainstHistory,
@@ -77,6 +83,16 @@ describe("scanRepo", () => {
     const r = scanRepo(dir);
     assert.ok(formatMarkdown(r).includes("# solo-watch"));
     assert.ok(formatAnnotations(r).includes("::"));
+  });
+
+  it("sarif is valid-ish json with runs", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));
+    writeFileSync(path.join(dir, "README.md"), "# x\n");
+    const r = scanRepo(dir);
+    const s = JSON.parse(formatSarif(r));
+    assert.equal(s.version, "2.1.0");
+    assert.ok(Array.isArray(s.runs));
+    assert.equal(s.runs[0].properties.grade, r.grade);
   });
 
   it("delta detects score movement", () => {
