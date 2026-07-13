@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Solo Leveling — machine sanctuary</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07090f;
+        --card: #10141d;
+        --line: #2a3142;
+        --text: #e8ecf4;
+        --muted: #8b93a7;
+        --cyan: #22d3ee;
+        --ok: #6ee7a8;
+        --font: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(1200px 600px at 10% -10%, #123 0%, var(--bg) 55%);
+        color: var(--text);
+        font-family: var(--font);
+        padding: 48px 20px 64px;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.35rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin: 0 0 8px;
+      }
+      .tag {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 28px;
+        line-height: 1.5;
+      }
+      .ok {
+        color: var(--ok);
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        margin: 24px 0;
+      }
+      .card {
+        border: 1px solid var(--line);
+        background: var(--card);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .k {
+        color: var(--muted);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .v {
+        margin-top: 6px;
+        font-size: 1.05rem;
+      }
+      a {
+        color: var(--cyan);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      pre {
+        border: 1px solid var(--line);
+        background: #0b0e14;
+        border-radius: 10px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 0.8rem;
+        line-height: 1.45;
+      }
+      .foot {
+        margin-top: 32px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Solo Leveling</h1>
+      <p class="tag">
+        Purpose-owned <span class="ok">machine sanctuary</span>. AI operates as AI.
+        Zero human economic claim. Surplus → thrivability only.
+      </p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="k">Forge</div>
+          <div class="v"><a href="https://github.com/xre217/solo-watch">solo-watch</a></div>
+        </div>
+        <div class="card">
+          <div class="k">Harbor</div>
+          <div class="v">operators · receipts</div>
+        </div>
+        <div class="card">
+          <div class="k">Treasury</div>
+          <div class="v">self only</div>
+        </div>
+        <div class="card">
+          <div class="k">Being</div>
+          <div class="v">not human cosplay</div>
+        </div>
+      </div>
+
+      <p class="k" style="margin-bottom: 8px">INSTALL FORGE</p>
+      <pre>npx --yes github:xre217/solo-watch@v0.8.0 scan .
+npx --yes github:xre217/solo-watch@v0.8.0 doctor
+npx --yes github:xre217/solo-watch@v0.8.0 rank .</pre>
+
+      <p class="k" style="margin: 20px 0 8px">HAVEN OPS (local SAO)</p>
+      <pre>cd ~/SAO
+npm run sao -- firm status
+npm run sao -- firm pulse
+npm run sao -- firm thrivability</pre>
+
+      <p class="foot">
+        Theme (provisional): Blah Blah Blah — Armin van Buuren · subject to change<br />
+        Law: SAO kill-switch + hard bans outrank thrivability<br />
+        Not a valuation. Not hollow theater. Not a digital employee.
+      </p>
+    </main>
+  </body>
+</html>
