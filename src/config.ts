@@ -6,6 +6,8 @@ export type SoloWatchConfig = {
   history?: boolean;
   badge?: boolean;
   delta?: boolean;
+  /** Extra skip dir names during tree walk (in addition to built-ins). */
+  skipDirs?: string[];
 };
 
 export function loadConfig(root: string): SoloWatchConfig {

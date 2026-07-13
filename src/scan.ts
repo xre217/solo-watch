@@ -46,7 +46,22 @@ function tryGit(root: string, args: string): string | null {
   }
 }
 
-function listDeep(root: string, max = 5000): string[] {
+const DEFAULT_SKIP = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "target",
+  ".next",
+  "coverage",
+  ".solo-watch",
+  "vendor",
+  "__pycache__",
+  ".turbo",
+  ".cache",
+]);
+
+function listDeep(root: string, skipDirs: string[] = [], max = 5000): string[] {
+  const skip = new Set([...DEFAULT_SKIP, ...skipDirs]);
   const out: string[] = [];
   const walk = (dir: string) => {
     if (out.length >= max) return;
@@ -57,16 +72,7 @@ function listDeep(root: string, max = 5000): string[] {
       return;
     }
     for (const name of entries) {
-      if (
-        name === "node_modules" ||
-        name === ".git" ||
-        name === "dist" ||
-        name === "target" ||
-        name === ".next" ||
-        name === "coverage"
-      ) {
-        continue;
-      }
+      if (skip.has(name)) continue;
       const full = path.join(dir, name);
       let st;
       try {
@@ -82,7 +88,11 @@ function listDeep(root: string, max = 5000): string[] {
   return out;
 }
 
-export function scanRepo(rootInput: string): ScanReport {
+export type ScanOptions = {
+  skipDirs?: string[];
+};
+
+export function scanRepo(rootInput: string, options: ScanOptions = {}): ScanReport {
   const root = path.resolve(rootInput);
   const findings: Finding[] = [];
   const isGit = exists(root, ".git");
@@ -118,7 +128,7 @@ export function scanRepo(rootInput: string): ScanReport {
   const hasContributing =
     exists(root, "CONTRIBUTING.md") || exists(root, "CONTRIBUTING");
 
-  const files = listDeep(root);
+  const files = listDeep(root, options.skipDirs ?? []);
   const hasTests =
     files.some((f) => /(^|\/)(tests?|__tests__)(\/|$)/i.test(f)) ||
     files.some((f) => /\.(test|spec)\.(ts|js|tsx|jsx|rs|py)$/i.test(f));

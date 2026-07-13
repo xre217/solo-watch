@@ -1,0 +1,7 @@
+{
+  "minScore": 55,
+  "history": true,
+  "badge": true,
+  "delta": true,
+  "skipDirs": ["vendor", "build", "out"]
+}

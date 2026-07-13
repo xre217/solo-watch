@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Config `skipDirs` for custom tree skips
+- Built-in skip: `.solo-watch`, `vendor`, `__pycache__`, `.turbo`, `.cache`
+- `scanRepo(root, { skipDirs })` options API
+
 ## 0.4.1
 
 - Signals: Makefile, runtime pin (.nvmrc), AGENTS.md/CLAUDE.md

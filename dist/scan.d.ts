@@ -24,7 +24,10 @@ export type ScanReport = {
     };
     scanned_at: string;
 };
-export declare function scanRepo(rootInput: string): ScanReport;
+export type ScanOptions = {
+    skipDirs?: string[];
+};
+export declare function scanRepo(rootInput: string, options?: ScanOptions): ScanReport;
 export declare function formatReport(r: ScanReport): string;
 export declare function formatMarkdown(r: ScanReport): string;
 /** GitHub Actions workflow annotations (no path line numbers — tree-level). */

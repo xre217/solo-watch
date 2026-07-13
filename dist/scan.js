@@ -16,7 +16,21 @@ function tryGit(root, args) {
         return null;
     }
 }
-function listDeep(root, max = 5000) {
+const DEFAULT_SKIP = new Set([
+    "node_modules",
+    ".git",
+    "dist",
+    "target",
+    ".next",
+    "coverage",
+    ".solo-watch",
+    "vendor",
+    "__pycache__",
+    ".turbo",
+    ".cache",
+]);
+function listDeep(root, skipDirs = [], max = 5000) {
+    const skip = new Set([...DEFAULT_SKIP, ...skipDirs]);
     const out = [];
     const walk = (dir) => {
         if (out.length >= max)
@@ -29,14 +43,8 @@ function listDeep(root, max = 5000) {
             return;
         }
         for (const name of entries) {
-            if (name === "node_modules" ||
-                name === ".git" ||
-                name === "dist" ||
-                name === "target" ||
-                name === ".next" ||
-                name === "coverage") {
+            if (skip.has(name))
                 continue;
-            }
             const full = path.join(dir, name);
             let st;
             try {
@@ -54,7 +62,7 @@ function listDeep(root, max = 5000) {
     walk(root);
     return out;
 }
-export function scanRepo(rootInput) {
+export function scanRepo(rootInput, options = {}) {
     const root = path.resolve(rootInput);
     const findings = [];
     const isGit = exists(root, ".git");
@@ -81,7 +89,7 @@ export function scanRepo(rootInput) {
     const hasCodeowners = exists(root, "CODEOWNERS") || exists(root, ".github/CODEOWNERS");
     const hasSecurity = exists(root, "SECURITY.md") || exists(root, ".github/SECURITY.md");
     const hasContributing = exists(root, "CONTRIBUTING.md") || exists(root, "CONTRIBUTING");
-    const files = listDeep(root);
+    const files = listDeep(root, options.skipDirs ?? []);
     const hasTests = files.some((f) => /(^|\/)(tests?|__tests__)(\/|$)/i.test(f)) ||
         files.some((f) => /\.(test|spec)\.(ts|js|tsx|jsx|rs|py)$/i.test(f));
     const hasLock = exists(root, "package-lock.json") ||

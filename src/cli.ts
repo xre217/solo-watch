@@ -18,7 +18,7 @@ import {
 } from "./history.js";
 import { loadConfig } from "./config.js";
 
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 
 function usage(): void {
   console.log(`solo-watch ${VERSION} — Solo Leveling Forge
@@ -40,7 +40,7 @@ Flags:
 Multi-path: solo-watch scan ./a ./b --json
 Config:     .solo-watch/config.json  { "minScore": 60, "history": true }
 
-npx --yes github:xre217/solo-watch@v0.4.0 scan .
+npx --yes github:xre217/solo-watch@v0.5.0 scan .
 `);
 }
 
@@ -119,7 +119,7 @@ function executeScan(
   const minScore = opts.minScore;
 
   const prior = deltaFlag || history ? readHistory(target, 1)[0] : null;
-  const report = scanRepo(target);
+  const report = scanRepo(target, { skipDirs: cfg.skipDirs });
   const d =
     deltaFlag || history
       ? deltaAgainstHistory(report, prior ?? null)
