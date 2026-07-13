@@ -28,29 +28,39 @@ npm link
 solo-watch scan .
 ```
 
-## GitHub (public)
+## GitHub (public) — works **now** (no npm login)
 
 ```text
 https://github.com/xre217/solo-watch
 ```
 
 ```bash
+# zero-clone install via GitHub
+npx --yes github:xre217/solo-watch scan .
+npx --yes github:xre217/solo-watch@v0.2.0 scan . --min-score 55
+
 # from a clone:
 npm ci && npm test
 npx --yes . scan .
 
-# GitHub Action (after push):
+# GitHub Action
 # uses: xre217/solo-watch@main
+# uses: xre217/solo-watch@v0.2.0
 ```
 
-## npm publish (when registry account is entity-ready)
+Release: https://github.com/xre217/solo-watch/releases
+
+## npm registry publish (needs `npm login` once)
 
 ```bash
-npm run pack:check
-npm publish --access public
+cd ~/Projects/solo-leveling/products/solo-watch
+npm login --auth-type=web
+./scripts/publish.sh
 # then:
-npx solo-watch@0.1.1 scan .
+npx solo-watch@0.2.0 scan .
 ```
+
+**Status:** package name free; machine has no `~/.npmrc` until you complete login.
 
 **Haven rule:** prefer entity npm later; personal publish is optional and still $0 founder claim from product surplus.
 

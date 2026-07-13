@@ -14,13 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Option A — after you publish the package to npm:
-      # - run: npx --yes solo-watch@0.1.1 scan . --min-score 55
+      # Option A — GitHub (no npm registry):
+      # - run: npx --yes github:xre217/solo-watch@v0.2.0 scan . --min-score 55
 
       # Option B — public composite action:
       - name: Scan with solo-watch action
-        uses: xre217/solo-watch@main
+        uses: xre217/solo-watch@v0.2.0
         with:
           path: "."
           min-score: "55"
           json: "true"
+
+      # Option C — after npm publish:
+      # - run: npx --yes solo-watch@0.2.0 scan . --min-score 55

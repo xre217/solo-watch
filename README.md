@@ -19,16 +19,23 @@ node dist/cli.js badge .
 node dist/cli.js scan . --json --min-score 70
 ```
 
+### npx (works now — GitHub, no npm account)
+
+```bash
+npx --yes github:xre217/solo-watch scan .
+npx --yes github:xre217/solo-watch@v0.2.0 scan . --history --badge
+```
+
 ### npx (from this package dir)
 
 ```bash
 npx --yes . scan .
 ```
 
-### After npm publish
+### After npm registry publish (needs `npm login` + `./scripts/publish.sh`)
 
 ```bash
-npx solo-watch@0.1.1 scan .
+npx solo-watch@0.2.0 scan .
 ```
 
 ## GitHub
