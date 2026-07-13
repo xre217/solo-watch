@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { badgeSvg, formatAnnotations, formatMarkdown, scanRepo } from "./scan.js";
 import { appendHistory, deltaAgainstHistory, formatDelta, readHistory, } from "./history.js";
+import { loadConfig } from "./config.js";
 describe("scanRepo", () => {
     it("flags empty non-git tree", () => {
         const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));
@@ -51,6 +52,10 @@ describe("scanRepo", () => {
         const svg = badgeSvg(88, "A");
         assert.ok(svg.includes("A 88"));
         assert.ok(svg.includes("solo-watch"));
+    });
+    it("loads empty config when missing", () => {
+        const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));
+        assert.deepEqual(loadConfig(dir), {});
     });
     it("markdown and annotations emit", () => {
         const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));

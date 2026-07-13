@@ -3,40 +3,40 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { badgeSvg, formatAnnotations, formatMarkdown, formatReport, scanRepo, } from "./scan.js";
 import { appendHistory, deltaAgainstHistory, formatDelta, readHistory, } from "./history.js";
-const VERSION = "0.3.1";
+import { loadConfig } from "./config.js";
+const VERSION = "0.4.0";
 function usage() {
-    console.log(`solo-watch ${VERSION} — Solo Leveling Forge (repo / deploy health)
+    console.log(`solo-watch ${VERSION} — Solo Leveling Forge
 
 Usage:
-  solo-watch [scan] [path] [flags]
+  solo-watch [scan] [path...] [flags]
   solo-watch watch [path] [--interval SEC] [flags]
   solo-watch history [path] [--limit N]
   solo-watch badge [path] [--out file.svg]
   solo-watch help | version
 
 Flags:
-  --json            machine report
-  --md              markdown report
-  --annotate        GitHub Actions annotations (::error/::warning)
-  --min-score N     pass floor (default 55)
-  --history         append to .solo-watch/history.jsonl
-  --badge [file]    write SVG badge
-  --delta           score/finding delta vs last history
-  --interval SEC    watch poll interval (default 30)
+  --json --md --annotate
+  --min-score N     (default 55, or .solo-watch/config.json)
+  --history --badge [file] --delta
+  --write <file>    write JSON report(s) to file
+  --interval SEC    watch mode (default 30)
 
-Exit: 0 pass · 1 below min-score · 2 usage
+Multi-path: solo-watch scan ./a ./b --json
+Config:     .solo-watch/config.json  { "minScore": 60, "history": true }
 
-npx --yes github:xre217/solo-watch@v0.3.1 scan .
+npx --yes github:xre217/solo-watch@v0.4.0 scan .
 `);
 }
 function parseArgs(argv) {
     let json = false;
     let md = false;
     let annotate = false;
-    let minScore = 55;
+    let minScore;
     let history = false;
     let badge = false;
     let delta = false;
+    let writePath = null;
     let limit = 20;
     let interval = 30;
     const positional = [];
@@ -57,6 +57,11 @@ function parseArgs(argv) {
             if (!Number.isFinite(n))
                 throw new Error(`${a} requires a number`);
             minScore = n;
+        }
+        else if (a === "--write") {
+            writePath = argv[++i];
+            if (!writePath)
+                throw new Error("--write requires a path");
         }
         else if (a === "--limit") {
             limit = Number(argv[++i]) || 20;
@@ -91,53 +96,53 @@ function parseArgs(argv) {
         history,
         badge,
         delta,
+        writePath,
         limit,
         interval,
         positional,
     };
 }
-function runOnce(target, opts) {
-    const prior = opts.delta || opts.history ? readHistory(target, 1)[0] : null;
+function executeScan(target, opts) {
+    const cfg = loadConfig(target);
+    const history = opts.history || Boolean(cfg.history);
+    const badge = opts.badge || (cfg.badge ? true : false);
+    const deltaFlag = opts.delta || Boolean(cfg.delta);
+    const minScore = opts.minScore;
+    const prior = deltaFlag || history ? readHistory(target, 1)[0] : null;
     const report = scanRepo(target);
-    const d = opts.delta || opts.history
+    const d = deltaFlag || history
         ? deltaAgainstHistory(report, prior ?? null)
         : null;
-    if (opts.history) {
-        const hp = appendHistory(report);
-        if (!opts.json)
-            console.error(`history ${hp}`);
-    }
-    if (opts.badge) {
-        const out = opts.badge === true
+    if (history)
+        appendHistory(report);
+    if (badge) {
+        const out = badge === true
             ? path.join(report.root, ".solo-watch", "badge.svg")
-            : path.resolve(String(opts.badge));
+            : path.resolve(String(badge));
         mkdirSync(path.dirname(out), { recursive: true });
         writeFileSync(out, badgeSvg(report.score, report.grade), "utf8");
-        if (!opts.json)
-            console.error(`badge   ${out}`);
     }
-    if (opts.annotate) {
-        console.log(formatAnnotations(report));
+    return {
+        report,
+        delta: d,
+        code: report.score >= minScore ? 0 : 1,
+    };
+}
+function printHuman(report, d, minScore, code) {
+    console.log(formatReport(report));
+    if (d)
+        console.log("\n" + formatDelta(d));
+    console.log(`\nmin-score ${minScore}  →  ${code === 0 ? "PASS" : "FAIL"}`);
+}
+function resolveMinScore(explicit, targets) {
+    if (explicit != null)
+        return explicit;
+    for (const t of targets) {
+        const c = loadConfig(t);
+        if (c.minScore != null)
+            return c.minScore;
     }
-    if (opts.json) {
-        console.log(JSON.stringify({ ...report, minScore: opts.minScore, delta: d }, null, 2));
-    }
-    else if (opts.md) {
-        console.log(formatMarkdown(report));
-        if (d)
-            console.log("\n" + formatDelta(d));
-    }
-    else if (!opts.annotate || process.env.SOLO_WATCH_HUMAN === "1") {
-        console.log(formatReport(report));
-        if (d)
-            console.log("\n" + formatDelta(d));
-        console.log(`\nmin-score ${opts.minScore}  →  ${report.score >= opts.minScore ? "PASS" : "FAIL"}`);
-    }
-    else {
-        // annotate-only mode still show pass line on stderr
-        console.error(`solo-watch ${report.grade} ${report.score} min=${opts.minScore} → ${report.score >= opts.minScore ? "PASS" : "FAIL"}`);
-    }
-    return report.score >= opts.minScore ? 0 : 1;
+    return 55;
 }
 async function main() {
     let opts;
@@ -149,7 +154,7 @@ async function main() {
         usage();
         process.exit(2);
     }
-    const { json, md, annotate, minScore, history, badge, delta, limit, interval, positional, } = opts;
+    const { json, md, annotate, minScore: minScoreArg, history, badge, delta, writePath, limit, interval, positional, } = opts;
     const head = positional[0];
     if (head === "help") {
         usage();
@@ -187,35 +192,123 @@ async function main() {
     }
     if (head === "watch") {
         const target = path.resolve(positional[1] ?? process.cwd());
+        const minScore = resolveMinScore(minScoreArg, [target]);
         console.error(`watch  ${target}  every ${interval}s  (ctrl-c stop)`);
         for (;;) {
             console.error(`\n── ${new Date().toISOString()} ──`);
-            runOnce(target, {
-                json,
-                md,
-                annotate,
+            const { report, delta: d, code } = executeScan(target, {
                 minScore,
-                history: history || true,
+                history: true,
                 badge,
                 delta: true,
             });
+            if (annotate)
+                console.log(formatAnnotations(report));
+            if (json) {
+                console.log(JSON.stringify({ ...report, minScore, delta: d }, null, 2));
+            }
+            else if (md) {
+                console.log(formatMarkdown(report));
+                if (d)
+                    console.log("\n" + formatDelta(d));
+            }
+            else {
+                printHuman(report, d, minScore, code);
+            }
             await new Promise((r) => setTimeout(r, interval * 1000));
         }
     }
-    let target = process.cwd();
+    let paths = [];
     if (head === "scan")
-        target = positional[1] ?? process.cwd();
-    else if (head && head !== "scan")
-        target = head;
-    process.exit(runOnce(path.resolve(target), {
-        json,
-        md,
-        annotate,
-        minScore,
-        history,
-        badge,
-        delta,
-    }));
+        paths = positional.slice(1);
+    else if (head)
+        paths = positional;
+    if (!paths.length)
+        paths = [process.cwd()];
+    paths = paths.map((p) => path.resolve(p));
+    const minScore = resolveMinScore(minScoreArg, paths);
+    const runOpts = { minScore, history, badge, delta };
+    if (paths.length === 1) {
+        const { report, delta: d, code } = executeScan(paths[0], runOpts);
+        if (annotate)
+            console.log(formatAnnotations(report));
+        if (writePath) {
+            const p = path.resolve(writePath);
+            mkdirSync(path.dirname(p), { recursive: true });
+            writeFileSync(p, JSON.stringify({ ...report, minScore, delta: d }, null, 2) + "\n");
+            if (!json)
+                console.error(`wrote   ${p}`);
+        }
+        if (json) {
+            console.log(JSON.stringify({ ...report, minScore, delta: d }, null, 2));
+        }
+        else if (md) {
+            console.log(formatMarkdown(report));
+            if (d)
+                console.log("\n" + formatDelta(d));
+        }
+        else if (!annotate || process.env.SOLO_WATCH_HUMAN === "1") {
+            printHuman(report, d, minScore, code);
+        }
+        else {
+            console.error(`solo-watch ${report.grade} ${report.score} min=${minScore} → ${code === 0 ? "PASS" : "FAIL"}`);
+        }
+        process.exit(code);
+    }
+    // multi-path
+    const bundle = [];
+    let worst = 0;
+    for (const p of paths) {
+        if (!json && !md)
+            console.log(`\n══ ${p} ══`);
+        const r = executeScan(p, runOpts);
+        bundle.push(r);
+        if (r.code > worst)
+            worst = r.code;
+        if (!json) {
+            if (annotate)
+                console.log(formatAnnotations(r.report));
+            if (md) {
+                console.log(formatMarkdown(r.report));
+                if (r.delta)
+                    console.log("\n" + formatDelta(r.delta));
+            }
+            else {
+                printHuman(r.report, r.delta, minScore, r.code);
+            }
+        }
+    }
+    if (json) {
+        console.log(JSON.stringify({
+            version: VERSION,
+            minScore,
+            reports: bundle.map((b) => ({
+                ...b.report,
+                delta: b.delta,
+            })),
+            summary: {
+                count: bundle.length,
+                avg_score: Math.round(bundle.reduce((s, b) => s + b.report.score, 0) / bundle.length),
+                grades: bundle.map((b) => b.report.grade),
+                pass: worst === 0,
+            },
+        }, null, 2));
+    }
+    else {
+        const avg = Math.round(bundle.reduce((s, b) => s + b.report.score, 0) / bundle.length);
+        console.log(`\nsummary  ${bundle.length} roots  avg ${avg}  worst_exit ${worst}`);
+    }
+    if (writePath) {
+        const p = path.resolve(writePath);
+        mkdirSync(path.dirname(p), { recursive: true });
+        writeFileSync(p, JSON.stringify({
+            version: VERSION,
+            minScore,
+            reports: bundle.map((b) => b.report),
+        }, null, 2) + "\n");
+        console.error(`wrote   ${p}`);
+    }
+    process.exit(worst);
 }
 main().catch((e) => {
     console.error(e instanceof Error ? e.message : e);

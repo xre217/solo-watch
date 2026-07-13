@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Multi-path scan: `solo-watch scan ./a ./b`
+- `.solo-watch/config.json` defaults (minScore, history, badge, delta)
+- `--write <file>` JSON report export
+- Multi-root `--json` summary (avg score, grades)
+
 ## 0.3.1
 
 - `--md` markdown report
