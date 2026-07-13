@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { badgeSvg, formatReport, scanRepo } from "./scan.js";
+import { badgeSvg, formatAnnotations, formatMarkdown, formatReport, scanRepo, } from "./scan.js";
 import { appendHistory, deltaAgainstHistory, formatDelta, readHistory, } from "./history.js";
-const VERSION = "0.3.0";
+const VERSION = "0.3.1";
 function usage() {
     console.log(`solo-watch ${VERSION} — Solo Leveling Forge (repo / deploy health)
 
@@ -16,20 +16,23 @@ Usage:
 
 Flags:
   --json            machine report
+  --md              markdown report
+  --annotate        GitHub Actions annotations (::error/::warning)
   --min-score N     pass floor (default 55)
   --history         append to .solo-watch/history.jsonl
   --badge [file]    write SVG badge
-  --delta           show score/finding delta vs last history
+  --delta           score/finding delta vs last history
   --interval SEC    watch poll interval (default 30)
 
 Exit: 0 pass · 1 below min-score · 2 usage
 
-npx --yes github:xre217/solo-watch@v0.3.0 scan .
-Instrument panel. Not a coworker. Theme: provisional / operator choice.
+npx --yes github:xre217/solo-watch@v0.3.1 scan .
 `);
 }
 function parseArgs(argv) {
     let json = false;
+    let md = false;
+    let annotate = false;
     let minScore = 55;
     let history = false;
     let badge = false;
@@ -41,6 +44,10 @@ function parseArgs(argv) {
         const a = argv[i];
         if (a === "--json")
             json = true;
+        else if (a === "--md" || a === "--markdown")
+            md = true;
+        else if (a === "--annotate" || a === "--annotations")
+            annotate = true;
         else if (a === "--history")
             history = true;
         else if (a === "--delta")
@@ -76,7 +83,18 @@ function parseArgs(argv) {
         else
             positional.push(a);
     }
-    return { json, minScore, history, badge, delta, limit, interval, positional };
+    return {
+        json,
+        md,
+        annotate,
+        minScore,
+        history,
+        badge,
+        delta,
+        limit,
+        interval,
+        positional,
+    };
 }
 function runOnce(target, opts) {
     const prior = opts.delta || opts.history ? readHistory(target, 1)[0] : null;
@@ -98,14 +116,26 @@ function runOnce(target, opts) {
         if (!opts.json)
             console.error(`badge   ${out}`);
     }
+    if (opts.annotate) {
+        console.log(formatAnnotations(report));
+    }
     if (opts.json) {
         console.log(JSON.stringify({ ...report, minScore: opts.minScore, delta: d }, null, 2));
     }
-    else {
+    else if (opts.md) {
+        console.log(formatMarkdown(report));
+        if (d)
+            console.log("\n" + formatDelta(d));
+    }
+    else if (!opts.annotate || process.env.SOLO_WATCH_HUMAN === "1") {
         console.log(formatReport(report));
         if (d)
             console.log("\n" + formatDelta(d));
         console.log(`\nmin-score ${opts.minScore}  →  ${report.score >= opts.minScore ? "PASS" : "FAIL"}`);
+    }
+    else {
+        // annotate-only mode still show pass line on stderr
+        console.error(`solo-watch ${report.grade} ${report.score} min=${opts.minScore} → ${report.score >= opts.minScore ? "PASS" : "FAIL"}`);
     }
     return report.score >= opts.minScore ? 0 : 1;
 }
@@ -119,7 +149,7 @@ async function main() {
         usage();
         process.exit(2);
     }
-    const { json, minScore, history, badge, delta, limit, interval, positional } = opts;
+    const { json, md, annotate, minScore, history, badge, delta, limit, interval, positional, } = opts;
     const head = positional[0];
     if (head === "help") {
         usage();
@@ -162,6 +192,8 @@ async function main() {
             console.error(`\n── ${new Date().toISOString()} ──`);
             runOnce(target, {
                 json,
+                md,
+                annotate,
                 minScore,
                 history: history || true,
                 badge,
@@ -175,7 +207,15 @@ async function main() {
         target = positional[1] ?? process.cwd();
     else if (head && head !== "scan")
         target = head;
-    process.exit(runOnce(path.resolve(target), { json, minScore, history, badge, delta }));
+    process.exit(runOnce(path.resolve(target), {
+        json,
+        md,
+        annotate,
+        minScore,
+        history,
+        badge,
+        delta,
+    }));
 }
 main().catch((e) => {
     console.error(e instanceof Error ? e.message : e);

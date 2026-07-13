@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { badgeSvg, scanRepo } from "./scan.js";
+import { badgeSvg, formatAnnotations, formatMarkdown, scanRepo } from "./scan.js";
 import {
   appendHistory,
   deltaAgainstHistory,
@@ -63,6 +63,14 @@ describe("scanRepo", () => {
     const svg = badgeSvg(88, "A");
     assert.ok(svg.includes("A 88"));
     assert.ok(svg.includes("solo-watch"));
+  });
+
+  it("markdown and annotations emit", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));
+    writeFileSync(path.join(dir, "README.md"), "# x\n");
+    const r = scanRepo(dir);
+    assert.ok(formatMarkdown(r).includes("# solo-watch"));
+    assert.ok(formatAnnotations(r).includes("::"));
   });
 
   it("delta detects score movement", () => {

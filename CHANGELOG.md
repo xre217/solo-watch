@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- `--md` markdown report
+- `--annotate` GitHub Actions annotations
+- Action: optional annotations step
+- Tests for md/annotate
+
 ## 0.3.0
 
 - `solo-watch watch` — interval rescan with auto-history + delta

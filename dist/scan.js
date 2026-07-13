@@ -392,6 +392,51 @@ export function formatReport(r) {
     }
     return lines.join("\n");
 }
+export function formatMarkdown(r) {
+    const problems = r.findings.filter((f) => f.severity !== "ok");
+    const oks = r.findings.filter((f) => f.severity === "ok");
+    const lines = [
+        `# solo-watch`,
+        ``,
+        `| | |`,
+        `|---|---|`,
+        `| **score** | ${r.score}/100 |`,
+        `| **grade** | ${r.grade} |`,
+        `| **root** | \`${r.root}\` |`,
+        `| **git** | ${r.meta.isGit} · ${r.meta.branch ?? "—"} |`,
+        `| **ci / tests** | ${r.meta.hasCi} / ${r.meta.hasTests} |`,
+        `| **at** | ${r.scanned_at} |`,
+        ``,
+    ];
+    if (problems.length) {
+        lines.push(`## findings`, ``);
+        for (const f of problems) {
+            lines.push(`- **[${f.severity}]** \`${f.id}\` (${f.weight > 0 ? "+" : ""}${f.weight}) ${f.title} — ${f.detail}`);
+        }
+        lines.push(``);
+    }
+    if (oks.length) {
+        lines.push(`## signals`, ``);
+        for (const f of oks) {
+            lines.push(`- **[ok]** \`${f.id}\` ${f.title}`);
+        }
+    }
+    return lines.join("\n");
+}
+/** GitHub Actions workflow annotations (no path line numbers — tree-level). */
+export function formatAnnotations(r) {
+    const lines = [];
+    for (const f of r.findings) {
+        if (f.severity === "ok")
+            continue;
+        const level = f.severity === "fail" ? "error" : f.severity === "warn" ? "warning" : "notice";
+        // title/message must not contain newlines for GHA
+        const msg = `${f.id}: ${f.title} — ${f.detail}`.replace(/\n/g, " ");
+        lines.push(`::${level} title=solo-watch::${msg}`);
+    }
+    lines.push(`::notice title=solo-watch score::grade ${r.grade} score ${r.score}/100`);
+    return lines.join("\n");
+}
 export function gradeColor(grade) {
     switch (grade) {
         case "A":

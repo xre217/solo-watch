@@ -26,6 +26,9 @@ export type ScanReport = {
 };
 export declare function scanRepo(rootInput: string): ScanReport;
 export declare function formatReport(r: ScanReport): string;
+export declare function formatMarkdown(r: ScanReport): string;
+/** GitHub Actions workflow annotations (no path line numbers — tree-level). */
+export declare function formatAnnotations(r: ScanReport): string;
 export declare function gradeColor(grade: string): string;
 /** Tiny SVG badge for READMEs / dashboards — instrument, not persona. */
 export declare function badgeSvg(score: number, grade: string): string;

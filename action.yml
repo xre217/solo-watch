@@ -18,6 +18,10 @@ inputs:
     description: "Emit JSON report to stdout and GITHUB_STEP_SUMMARY"
     required: false
     default: "true"
+  annotate:
+    description: "Emit GitHub workflow annotations for findings"
+    required: false
+    default: "true"
 
 outputs:
   score:
@@ -55,9 +59,13 @@ runs:
         SW_PATH: ${{ inputs.path }}
         SW_MIN: ${{ inputs.min-score }}
         SW_JSON: ${{ inputs.json }}
+        SW_ANNOTATE: ${{ inputs.annotate }}
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
+        if [[ "$SW_ANNOTATE" == "true" ]]; then
+          node "$ACTION_PATH/dist/cli.js" scan "$SW_PATH" --min-score 0 --annotate || true
+        fi
         ARGS=(scan "$SW_PATH" --min-score "$SW_MIN")
         if [[ "$SW_JSON" == "true" ]]; then
           ARGS+=(--json)
