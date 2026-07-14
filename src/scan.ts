@@ -34,6 +34,23 @@ function exists(root: string, rel: string): boolean {
   return existsSync(path.join(root, rel));
 }
 
+/**
+ * Sensitive path heuristic for repo trees.
+ * Templates (.env.example / .env.sample / .env.template / .env.dist) are allowed;
+ * live secret files (.env, .env.local, credentials.json, …) still fail.
+ */
+export function isSensitiveFilename(rel: string): boolean {
+  const base = rel.split(/[/\\]/).pop() ?? rel;
+  // Safe env templates — do not fail open-source kits for documenting env vars
+  if (/^\.env\.(example|sample|template|dist)$/i.test(base)) return false;
+  if (/^\.env($|\.)/i.test(base)) return true;
+  if (/^id_rsa$/i.test(base)) return true;
+  if (/^credentials\.json$/i.test(base)) return true;
+  if (/^service-account.*\.json$/i.test(base)) return true;
+  if (/(^|\/)\.aws[/\\]credentials$/i.test(rel)) return true;
+  return false;
+}
+
 function tryGit(root: string, args: string): string | null {
   try {
     return execSync(`git ${args}`, {
@@ -307,11 +324,7 @@ export function scanRepo(rootInput: string, options: ScanOptions = {}): ScanRepo
     });
   }
 
-  const secretNames = files.filter((f) =>
-    /(^|\/)\.env($|\.)|(^|\/)id_rsa$|(^|\/)credentials\.json$|(^|\/)service-account.*\.json$|(^|\/)\.aws\/credentials$/i.test(
-      f,
-    ),
-  );
+  const secretNames = files.filter((f) => isSensitiveFilename(f));
   if (secretNames.length) {
     findings.push({
       id: "secret-filenames",

@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { badgeSvg, formatAnnotations, formatMarkdown, formatSarif, scanRepo, } from "./scan.js";
+import { badgeSvg, formatAnnotations, formatMarkdown, formatSarif, isSensitiveFilename, scanRepo, } from "./scan.js";
 import { appendHistory, deltaAgainstHistory, formatDelta, readHistory, } from "./history.js";
 import { loadConfig } from "./config.js";
 describe("scanRepo", () => {
@@ -85,5 +85,22 @@ describe("scanRepo", () => {
         const d = deltaAgainstHistory(r2, readHistory(dir, 1)[0]);
         assert.equal(d.has_prior, true);
         assert.ok(formatDelta(d).includes("score"));
+    });
+    it("allows .env.example templates; flags live .env files", () => {
+        assert.equal(isSensitiveFilename(".env.example"), false);
+        assert.equal(isSensitiveFilename("apps/web/.env.sample"), false);
+        assert.equal(isSensitiveFilename(".env.template"), false);
+        assert.equal(isSensitiveFilename(".env"), true);
+        assert.equal(isSensitiveFilename(".env.local"), true);
+        assert.equal(isSensitiveFilename("apps/web/.env.production"), true);
+        assert.equal(isSensitiveFilename("credentials.json"), true);
+        const dir = mkdtempSync(path.join(tmpdir(), "solo-watch-"));
+        writeFileSync(path.join(dir, "README.md"), "# x\n");
+        writeFileSync(path.join(dir, ".env.example"), "KEY=\n");
+        const clean = scanRepo(dir);
+        assert.ok(!clean.findings.some((f) => f.id === "secret-filenames"));
+        writeFileSync(path.join(dir, ".env.local"), "SECRET=1\n");
+        const dirty = scanRepo(dir);
+        assert.ok(dirty.findings.some((f) => f.id === "secret-filenames"));
     });
 });

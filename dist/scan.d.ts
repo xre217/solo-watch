@@ -24,6 +24,12 @@ export type ScanReport = {
     };
     scanned_at: string;
 };
+/**
+ * Sensitive path heuristic for repo trees.
+ * Templates (.env.example / .env.sample / .env.template / .env.dist) are allowed;
+ * live secret files (.env, .env.local, credentials.json, …) still fail.
+ */
+export declare function isSensitiveFilename(rel: string): boolean;
 export type ScanOptions = {
     skipDirs?: string[];
 };

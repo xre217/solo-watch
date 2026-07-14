@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1
+
+- Secret heuristic: allow `.env.example` / `.env.sample` / `.env.template` / `.env.dist` (still fail live `.env*`)
+- Landing pin + docs stay on current public tag
+
 ## 0.8.0
 
 - `--sarif <file>` SARIF 2.1.0 export
