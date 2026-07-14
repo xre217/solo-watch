@@ -37,7 +37,7 @@ npx --yes . scan .
 ### After npm registry publish (needs `npm login` + `./scripts/publish.sh`)
 
 ```bash
-npx solo-watch@0.2.0 scan .
+npx solo-watch@0.8.0 scan .
 ```
 
 ## GitHub

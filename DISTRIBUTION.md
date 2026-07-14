@@ -37,7 +37,7 @@ https://github.com/xre217/solo-watch
 ```bash
 # zero-clone install via GitHub
 npx --yes github:xre217/solo-watch scan .
-npx --yes github:xre217/solo-watch@v0.2.0 scan . --min-score 55
+npx --yes github:xre217/solo-watch@v0.8.0 scan . --min-score 55
 
 # from a clone:
 npm ci && npm test
@@ -45,9 +45,10 @@ npx --yes . scan .
 
 # GitHub Action
 # uses: xre217/solo-watch@main
-# uses: xre217/solo-watch@v0.2.0
+# uses: xre217/solo-watch@v0.8.0
 ```
 
+Landing: https://xre217.github.io/solo-watch/  
 Release: https://github.com/xre217/solo-watch/releases
 
 ## npm registry publish (needs `npm login` once)
@@ -57,7 +58,7 @@ cd ~/Projects/solo-leveling/products/solo-watch
 npm login --auth-type=web
 ./scripts/publish.sh
 # then:
-npx solo-watch@0.2.0 scan .
+npx solo-watch@0.8.0 scan .
 ```
 
 **Status:** package name free; machine has no `~/.npmrc` until you complete login.
